@@ -12,7 +12,7 @@ const App = () => {
   const [happyPrice, setHappyPrice] = useState(0);
   const [happyBalance, setHappyBalance] = useState(0);
   const [accounts, setAccounts] = useState(null);
-
+  const [contract, setContract] = useState(null);
   useEffect(() => {
     const init = async () => {
       const web3Instance = await getWeb3();
@@ -26,6 +26,14 @@ const App = () => {
     init();
   }, []);
 
+  const updatedHappyPrice = () => {
+    if (contract) {
+      contract.methods
+        .getLastHappyPrice()
+        .call()
+        .then((res) => setHappyPrice(web3.utils.fromWei(res, "ether")));
+    }
+  };
   const ellipsis = (str) => {
     return str ? str.slice(0, 6) + "..." + str.slice(str.length - 4) : "";
   };
