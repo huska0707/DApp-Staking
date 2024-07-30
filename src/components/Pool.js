@@ -1,10 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 
-const Pool = ({ id }) => {
+const Pool = ({ id, contract }) => {
   const [token, setToken] = useState(null);
   const [yieldValue, setYieldValue] = useState(0);
   const [icon, setIcon] = useState(null);
@@ -12,6 +12,14 @@ const Pool = ({ id }) => {
   const [claim, setClaim] = useState(0);
   const [userBalance, setUserBalance] = useState(0);
   const [unlocked, setUnlocked] = useState(false);
+
+  let tokenContract;
+
+  useEffect(() => {
+    const pool = contract.methods.pool(id).call();
+    setYieldValue(pool.yield / 100);
+
+  }, []);
 
   return (
     <>

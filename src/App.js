@@ -5,12 +5,20 @@ import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container";
 import CardDeck from "react-bootstrap/CardDeck";
 
+import getWeb3 from "./getWeb3";
+
 const App = () => {
+  const [web3, setWeb3] = useState(null);
   const [happyPrice, setHappyPrice] = useState(0);
   const [happyBalance, setHappyBalance] = useState(0);
   const [accounts, setAccounts] = useState(null);
 
   useEffect(() => {
+    const init = async () => {
+      const web3Instance = await getWeb3();
+    }
+
+    init();
   }, []);
 
   const ellipsis = (str) => {
