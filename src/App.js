@@ -16,7 +16,12 @@ const App = () => {
   useEffect(() => {
     const init = async () => {
       const web3Instance = await getWeb3();
-    }
+
+      const userAccount = await web3Instance.eth.getAccounts();
+
+      setWeb3(web3Instance);
+      setAccounts(userAccount);
+    };
 
     init();
   }, []);
@@ -24,6 +29,10 @@ const App = () => {
   const ellipsis = (str) => {
     return str ? str.slice(0, 6) + "..." + str.slice(str.length - 4) : "";
   };
+
+  if (!web3) {
+    return <div>Loading Web3, account and contract ...</div>;
+  }
 
   return (
     <>
