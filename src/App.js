@@ -4,6 +4,7 @@ import Navbar from "react-bootstrap/Navbar";
 import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container";
 import CardDeck from "react-bootstrap/CardDeck";
+import HappyChefContract from './contracts/HappyChef.json';
 
 import getWeb3 from "./getWeb3";
 
@@ -13,14 +14,24 @@ const App = () => {
   const [happyBalance, setHappyBalance] = useState(0);
   const [accounts, setAccounts] = useState(null);
   const [contract, setContract] = useState(null);
+
   useEffect(() => {
     const init = async () => {
       const web3Instance = await getWeb3();
 
       const userAccount = await web3Instance.eth.getAccounts();
 
+      const networkId = await web3Instance.eth.net.getId();
+      const deployNetwork = HappyChefContract.networks[networkId];
+
+      const contractInstance = new web3Instance.eth.Contract(
+        HappyChefContract.abi,
+        deployNetwork && deployNetwork.address
+      )
+
       setWeb3(web3Instance);
       setAccounts(userAccount);
+      setContract(contractInstance);
     };
 
     init();
