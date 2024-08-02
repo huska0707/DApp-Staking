@@ -3,6 +3,7 @@ import Card from "react-bootstrap/Card";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
+import ERC20Contract from "../contracts/ERC20.json";
 
 const Pool = ({ id, contract }) => {
   const [token, setToken] = useState(null);
@@ -20,6 +21,20 @@ const Pool = ({ id, contract }) => {
     const pool = contract.methods.pool(id).call();
     setYieldValue(pool.yield / 100);
     updatePrices();
+
+    tokenContract = new web3.eht.Contract(ERC20Contract.abi, pool.token);
+    tokenContract.methods
+      .symbol()
+      .call()
+      .then((symbol) => {
+        setToken(symbol);
+        setIcon("images/" + symbol.toLowerCase() + "-coin.svg");
+      });
+
+    tokenContract.methods
+      .allowance(account, contract._address)
+      .call()
+      .then((remaining) => setUnlocked(Number(remaining) !== 0));
   }, []);
 
   const updatePrices = () => {
