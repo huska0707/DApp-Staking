@@ -12,14 +12,36 @@ const Pool = ({ id, contract }) => {
   const [claim, setClaim] = useState(0);
   const [userBalance, setUserBalance] = useState(0);
   const [unlocked, setUnlocked] = useState(false);
+  const [price, setPrice] = useState(0);
 
   let tokenContract;
 
   useEffect(() => {
     const pool = contract.methods.pool(id).call();
     setYieldValue(pool.yield / 100);
-
+    updatePrices();
   }, []);
+
+  const updatePrices = () => {
+    contract.methods
+      .pendingReward(id, account)
+      .call()
+      .then((reward) => {
+        setClaim(Number(web3.utils.fromWei(reward)));
+      });
+    contract.methods
+      .getLastPrice(id)
+      .call()
+      .then((price) => {
+        setPrice(Number(web3.utils.fromWei(price)));
+      });
+    contract.methods
+      .getLastHappyPrice()
+      .call()
+      .then((price) => {
+        setRewardPrice(Number(web3.utils.fromWei(price)));
+      });
+  };
 
   return (
     <>
