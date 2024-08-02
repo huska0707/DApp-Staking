@@ -35,7 +35,19 @@ const Pool = ({ id, contract }) => {
       .allowance(account, contract._address)
       .call()
       .then((remaining) => setUnlocked(Number(remaining) !== 0));
+
+    web3.eth.subscribe("newBlockHeaders", (err, res) => {
+      if (!err) {
+        onNewBlock(res);
+      }
+    });
+
+    updatePoolBalance();
   }, []);
+
+  const onNewBlock = async () => {
+    updatePrices();
+  };
 
   const updatePrices = () => {
     contract.methods
@@ -55,6 +67,15 @@ const Pool = ({ id, contract }) => {
       .call()
       .then((price) => {
         setRewardPrice(Number(web3.utils.fromWei(price)));
+      });
+  };
+
+  const updatePoolBalance = () => {
+    contract.methods
+      .getPoolBalance(id)
+      .call()
+      .then((balance) => {
+        setPoolBalance(Number(web3.utils.fromWei(balance).toFixed(2)));
       });
   };
 
