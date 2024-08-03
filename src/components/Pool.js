@@ -9,6 +9,7 @@ const Pool = ({ id, contract }) => {
   const [token, setToken] = useState(null);
   const [yieldValue, setYieldValue] = useState(0);
   const [icon, setIcon] = useState(null);
+  const [depositShow, setDepositShow] = useState(false);
   const [rewardPrice, setRewardPrice] = useState(0);
   const [claim, setClaim] = useState(0);
   const [userBalance, setUserBalance] = useState(0);
@@ -89,6 +90,20 @@ const Pool = ({ id, contract }) => {
       });
   };
 
+  const onDepositClose = async () => {
+    contract.methods.stake(
+      id,
+      web3.utils
+        .toWei(deposit)
+        .send({ from: account })
+        .then((res) => {
+          updateUserBalance();
+        })
+    );
+
+    setDepositShow(false);
+  };
+
   return (
     <>
       <Card style={{ width: "18rem" }}>
@@ -125,6 +140,34 @@ const Pool = ({ id, contract }) => {
           </Row>
         </Card.Body>
       </Card>
+
+      <Modal show={depositShow} centered backdrop="static">
+        <Modal.Header>
+          <Modal.Title>{token} deposit</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group>
+              Your {token} balance: {tokenBalance}
+            </Form.Group>
+            <Form.Group>
+              <Form.Control
+                type="text"
+                value={deposit}
+                onChange={(e) => setDeposit(e.target.value)}
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={onDepositClose}>
+            Deposit
+          </Button>
+          <Button variant="secondary" onClick={() => setDepositShow(false)}>
+            Cancel
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 };
