@@ -43,6 +43,7 @@ const Pool = ({ id, contract }) => {
     });
 
     updatePoolBalance();
+    updateUserBalance();
   }, []);
 
   const onNewBlock = async () => {
@@ -76,6 +77,15 @@ const Pool = ({ id, contract }) => {
       .call()
       .then((balance) => {
         setPoolBalance(Number(web3.utils.fromWei(balance).toFixed(2)));
+      });
+  };
+
+  const updateUserBalance = () => {
+    contract.methods
+      .getUserBalance(id, account)
+      .call()
+      .then((balance) => {
+        setUserBalance(Number(web3.utils.fromWei(balance)));
       });
   };
 
