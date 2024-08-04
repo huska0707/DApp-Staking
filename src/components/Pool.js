@@ -4,6 +4,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Button from "react-bootstrap/Button";
 import ERC20Contract from "../contracts/ERC20.json";
+import { Modal } from "bootstrap";
 
 const Pool = ({ id, contract }) => {
   const [token, setToken] = useState(null);
@@ -15,7 +16,10 @@ const Pool = ({ id, contract }) => {
   const [userBalance, setUserBalance] = useState(0);
   const [unlocked, setUnlocked] = useState(false);
   const [price, setPrice] = useState(0);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
 
+  const [withdraw, setWithdraw] = useState(0);
+  const [withdrawShow, setWithdrawShow] = useState(false);
   let tokenContract;
 
   useEffect(() => {
@@ -90,6 +94,17 @@ const Pool = ({ id, contract }) => {
       });
   };
 
+  const onWithdrawClose = async () => {
+    contract.methods
+      .unstake(id, web3.utils.toWei(withdraw))
+      .send({ from: account })
+      .then((res) => {
+        updatePoolBalance();
+        setWithdrawLoading(false);
+      });
+    setWithdrawShow(false);
+  };
+
   const onDepositClose = async () => {
     contract.methods.stake(
       id,
@@ -135,7 +150,44 @@ const Pool = ({ id, contract }) => {
           <Row>
             <Col>{userBalance}</Col>
             <Col className="right">
-              {!unlocked && <Button variant="primary">Unlock</Button>}
+              {!unlocked && (
+                <Button
+                  variant="primary"
+                  onClick={onUnlock}
+                  disabled={unlockLoading}
+                >
+                  {unlockLoading && (
+                    <Spinner as="span" animation="border" size="sm" />
+                  )}
+                  Unlock
+                </Button>
+              )}
+              {unlocked && (
+                <>
+                  <Button
+                    variant="primary"
+                    onClick={onDeposit}
+                    disabled={depositShow || depositLoading}
+                  >
+                    {depositLoading && (
+                      <Spinner as="span" animation="border" size="sm" />
+                    )}
+                    +
+                  </Button>{" "}
+                </>
+              )}
+              {unlocked && userBalance !== "0" && (
+                <Button
+                  variant="primary"
+                  onClick={onWithdraw}
+                  disabled={withdrawShow || withdrawLoading}
+                >
+                  {withdrawLoading && (
+                    <Spinner as="span" animation="border" size="sm" />
+                  )}
+                  -
+                </Button>
+              )}
             </Col>
           </Row>
         </Card.Body>
@@ -166,6 +218,32 @@ const Pool = ({ id, contract }) => {
           <Button variant="secondary" onClick={() => setDepositShow(false)}>
             Cancel
           </Button>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal show={withdrawShow} centered backdrop="static">
+        <Modal.Header>
+          <Modal.Title>{token} withdraw</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group>
+              Your {token} balance: {userBalance}
+            </Form.Group>
+            <Form.Group>
+              <Form.Control
+                type="text"
+                value={withdraw}
+                onChange={(e) => setWithdraw(e.target.value)}
+              ></Form.Control>
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="primary" onClick={onWithdrawClose}>
+            Withdraw
+          </Button>
+          <Button>Cancel</Button>
         </Modal.Footer>
       </Modal>
     </>
