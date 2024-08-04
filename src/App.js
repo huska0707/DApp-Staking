@@ -5,6 +5,8 @@ import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container";
 import CardDeck from "react-bootstrap/CardDeck";
 import HappyChefContract from "./contracts/HappyChef.json";
+import ERC20Contract from "./contracts/ERC20.json";
+import HappyContract from "./contracts/Happy.json";
 
 import getWeb3 from "./getWeb3";
 import Pool from "./components/Pool";
@@ -32,6 +34,11 @@ const App = () => {
         const contractInstance = new web3Instance.eth.Contract(
           HappyChefContract.abi,
           deployNetwork && deployNetwork.address
+        );
+
+        happy = new web3Instance.eth.Contract(
+          ERC20Contract.abi,
+          HappyContract.networks[networkId].address
         );
 
         setWeb3(web3Instance);

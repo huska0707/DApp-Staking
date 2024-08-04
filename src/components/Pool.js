@@ -1,54 +1,65 @@
-import React, { useEffect, useState } from "react";
-import Card from "react-bootstrap/Card";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import Button from "react-bootstrap/Button";
+import Card from "react-bootstrap/Card";
+import Col from "react-bootstrap/Col";
+import Form from "react-bootstrap/Form";
+import Modal from "react-bootstrap/Modal";
+import Row from "react-bootstrap/Row";
+import Spinner from "react-bootstrap/Spinner";
 import ERC20Contract from "../contracts/ERC20.json";
-import { Modal } from "bootstrap";
 
-const Pool = ({ id, contract }) => {
-  const [token, setToken] = useState(null);
+const Pool = ({ id, web3, contract, account, updateHappyBalance }) => {
   const [yieldValue, setYieldValue] = useState(0);
-  const [icon, setIcon] = useState(null);
-  const [depositShow, setDepositShow] = useState(false);
+  const [price, setPrice] = useState(0);
   const [rewardPrice, setRewardPrice] = useState(0);
   const [claim, setClaim] = useState(0);
+  const [poolBalance, setPoolBalance] = useState(0);
   const [userBalance, setUserBalance] = useState(0);
   const [unlocked, setUnlocked] = useState(false);
-  const [price, setPrice] = useState(0);
-  const [withdrawLoading, setWithdrawLoading] = useState(false);
-
+  const [token, setToken] = useState(null);
+  const [tokenBalance, setTokenBalance] = useState(0);
+  const [icon, setIcon] = useState(null);
+  const [deposit, setDeposit] = useState(0);
+  const [depositShow, setDepositShow] = useState(false);
   const [withdraw, setWithdraw] = useState(0);
   const [withdrawShow, setWithdrawShow] = useState(false);
+  const [unlockLoading, setUnlockLoading] = useState(false);
+  const [depositLoading, setDepositLoading] = useState(false);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
+  const [claimLoading, setClaimLoading] = useState(false);
   let tokenContract;
 
   useEffect(() => {
-    const pool = contract.methods.pool(id).call();
-    setYieldValue(pool.yield / 100);
-    updatePrices();
+    const init = async () => {
+      const pool = await contract.methods.pools(id).call();
+      setYieldValue(pool.yield / 100);
+      updatePrices();
 
-    tokenContract = new web3.eht.Contract(ERC20Contract.abi, pool.token);
-    tokenContract.methods
-      .symbol()
-      .call()
-      .then((symbol) => {
-        setToken(symbol);
-        setIcon("images/" + symbol.toLowerCase() + "-coin.svg");
+      tokenContract = new web3.eth.Contract(ERC20Contract.abi, pool.token);
+      tokenContract.methods
+        .symbol()
+        .call()
+        .then((symbol) => {
+          setToken(symbol);
+          setIcon("images/" + symbol.toLowerCase() + "-coin.svg");
+        });
+      tokenContract.methods
+        .allowance(account, contract._address)
+        .call()
+        .then((remaining) => setUnlocked(Number(remaining) !== 0));
+
+      updatePoolBalance();
+      updateUserBalance();
+
+      web3.eth.subscribe("newBlockHeaders", (err, res) => {
+        if (!err) {
+          onNewBlock(res);
+        }
       });
+    };
 
-    tokenContract.methods
-      .allowance(account, contract._address)
-      .call()
-      .then((remaining) => setUnlocked(Number(remaining) !== 0));
-
-    web3.eth.subscribe("newBlockHeaders", (err, res) => {
-      if (!err) {
-        onNewBlock(res);
-      }
-    });
-
-    updatePoolBalance();
-    updateUserBalance();
+    init();
   }, []);
 
   const onNewBlock = async () => {
@@ -81,7 +92,7 @@ const Pool = ({ id, contract }) => {
       .getPoolBalance(id)
       .call()
       .then((balance) => {
-        setPoolBalance(Number(web3.utils.fromWei(balance).toFixed(2)));
+        setPoolBalance(Number(web3.utils.fromWei(balance)).toFixed(2));
       });
   };
 
@@ -94,29 +105,62 @@ const Pool = ({ id, contract }) => {
       });
   };
 
+  const onUnlock = async () => {
+    setUnlockLoading(true);
+    tokenContract.methods
+      .approve(contract._address, -1)
+      .send({ from: account })
+      .then((res) => {
+        setUnlocked(res.status === true);
+        setUnlockLoading(false);
+      });
+  };
+
+  const onDeposit = async () => {
+    const balance = await tokenContract.methods.balanceOf(account).call();
+    setTokenBalance(web3.utils.fromWei(balance));
+    setDepositShow(true);
+    setDepositLoading(true);
+  };
+
+  const onWithdraw = async () => {
+    setWithdrawShow(true);
+    setWithdrawLoading(true);
+  };
+
+  const onDepositClose = async () => {
+    contract.methods
+      .stake(id, web3.utils.toWei(deposit))
+      .send({ from: account })
+      .then((res) => {
+        updateUserBalance();
+        updatePoolBalance();
+        setDepositLoading(false);
+      });
+    setDepositShow(false);
+  };
+
   const onWithdrawClose = async () => {
     contract.methods
       .unstake(id, web3.utils.toWei(withdraw))
       .send({ from: account })
       .then((res) => {
-        updatePoolBalance();
+        updateUserBalance();
         setWithdrawLoading(false);
       });
     setWithdrawShow(false);
   };
 
-  const onDepositClose = async () => {
-    contract.methods.stake(
-      id,
-      web3.utils
-        .toWei(deposit)
-        .send({ from: account })
-        .then((res) => {
-          updateUserBalance();
-        })
-    );
-
-    setDepositShow(false);
+  const onClaim = async () => {
+    setClaimLoading(true);
+    contract.methods
+      .unstake(id, 0)
+      .send({ from: account })
+      .then(() => {
+        updatePrices();
+        setClaimLoading(false);
+        updateHappyBalance();
+      });
   };
 
   return (
@@ -141,7 +185,16 @@ const Pool = ({ id, contract }) => {
           <Row>
             <Col>$ {(rewardPrice * claim).toFixed(6)}</Col>
             <Col className="right">
-              <Button variant="primary">Claim</Button>
+              <Button
+                variant="primary"
+                onClick={onClaim}
+                disabled={claim === 0 || claimLoading}
+              >
+                {claimLoading && (
+                  <Spinner as="span" animation="border" size="sm" />
+                )}
+                Claim
+              </Button>
             </Col>
           </Row>
           <Row>
@@ -191,6 +244,16 @@ const Pool = ({ id, contract }) => {
             </Col>
           </Row>
         </Card.Body>
+        <Card.Footer>
+          <Row>
+            <Col>Total Pool Liquidity</Col>
+            <Col className="right">$ {(price * poolBalance).toFixed(2)}</Col>
+          </Row>
+          <Row>
+            <Col>My staked value</Col>
+            <Col className="right">$ {(price * userBalance).toFixed(2)}</Col>
+          </Row>
+        </Card.Footer>
       </Card>
 
       <Modal show={depositShow} centered backdrop="static">
@@ -235,7 +298,7 @@ const Pool = ({ id, contract }) => {
                 type="text"
                 value={withdraw}
                 onChange={(e) => setWithdraw(e.target.value)}
-              ></Form.Control>
+              />
             </Form.Group>
           </Form>
         </Modal.Body>
@@ -243,11 +306,21 @@ const Pool = ({ id, contract }) => {
           <Button variant="primary" onClick={onWithdrawClose}>
             Withdraw
           </Button>
-          <Button>Cancel</Button>
+          <Button variant="secondary" onClick={() => setWithdrawShow(false)}>
+            Cancel
+          </Button>
         </Modal.Footer>
       </Modal>
     </>
   );
+};
+
+Pool.propTypes = {
+  web3: PropTypes.object.isRequired,
+  contract: PropTypes.object.isRequired,
+  account: PropTypes.string.isRequired,
+  id: PropTypes.number.isRequired,
+  updateHappyBalance: PropTypes.func.isRequired,
 };
 
 export default Pool;
