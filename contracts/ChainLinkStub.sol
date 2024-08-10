@@ -22,4 +22,36 @@ contract ChainLinkStub is AggregatorV3Interface, Ownable {
     function version() external view override returns (uint256) {
         return 1;
     }
+
+    function getRoundData(
+        uint80 _roundId
+    )
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
+        return (_roundId, value * 10 ** 8, 1, 1, 1);
+    }
+
+    function latestRoundData()
+        external
+        view
+        override
+        returns (
+            uint80 roundId,
+            int256 answer,
+            uint256 startedAt,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        )
+    {
+        return (0, value * 10 ** 8, 1, 1, 1);
+    }
 }
