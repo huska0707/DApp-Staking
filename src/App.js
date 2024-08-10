@@ -2,6 +2,7 @@ import "./App.css";
 import React, { useState, useEffect } from "react";
 import Navbar from "react-bootstrap/Navbar";
 import Button from "react-bootstrap/Button";
+
 import Container from "react-bootstrap/Container";
 import CardDeck from "react-bootstrap/CardDeck";
 import HappyChefContract from "./contracts/HappyChef.json";
@@ -40,6 +41,11 @@ const App = () => {
           ERC20Contract.abi,
           HappyContract.networks[networkId].address
         );
+
+        window.ethereum.on("accountChanged", (account) => {
+          console.log(`Accounts updated: ${accounts}`);
+          window.location.reload();
+        });
 
         setWeb3(web3Instance);
         setAccounts(userAccount);
@@ -119,7 +125,7 @@ const App = () => {
       </Navbar>
 
       <Container>
-        <CardDeck>
+        <CardDeck style={{ padding: "16px" }}>
           {pools.map((pool) => {
             <Pool
               web3={web3}
